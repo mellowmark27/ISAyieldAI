@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UK ISA Income Portfolio — ~6% Yield</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@200;300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #fff;
+    color: #0a0a0a;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── TYPOGRAPHY ── */
+  .display {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+  }
+  .display-bold {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 0.92;
+  }
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  /* ── NAVIGATION ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  /* ── HERO ── */
+  .hero-line {
+    display: block;
+    overflow: hidden;
+  }
+  .hero-line span {
+    display: block;
+    transform: translateY(110%);
+    animation: slideUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes slideUp { to { transform: translateY(0); } }
+
+  .hero-meta {
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.6s forwards;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── STAT CARDS ── */
+  .stat-card {
+    border: 1px solid #e8e8e8;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover {
+    border-color: #0a0a0a;
+    box-shadow: 4px 4px 0 #0a0a0a;
+  }
+
+  /* ── HOLDING ROWS ── */
+  .holding-row {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+    cursor: default;
+  }
+  .holding-row:hover { background: #fafafa; }
+  .holding-row:last-child { border-bottom: none; }
+
+  .yield-bar-fill {
+    height: 3px;
+    background: #0a0a0a;
+    border-radius: 2px;
+    transition: width 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ── TYPE PILLS ── */
+  .pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .pill-it { background: #0a0a0a; color: #fff; }
+  .pill-etf { background: #e8e8e8; color: #0a0a0a; border: 1px solid #ccc; }
+  .pill-oeic { background: #f5f5f5; color: #0a0a0a; border: 1px solid #e0e0e0; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-rule {
+    width: 48px;
+    height: 1px;
+    background: #0a0a0a;
+    display: block;
+    margin-bottom: 32px;
+  }
+
+  /* ── LOGIC CARDS ── */
+  .logic-card {
+    border: 1px solid #e8e8e8;
+    transition: all 0.2s;
+  }
+  .logic-card:hover {
+    border-color: #0a0a0a;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+
+  /* ── RISK ROW ── */
+  .risk-item {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 24px;
+    margin-top: 24px;
+  }
+  .risk-item:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ── TABS ── */
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border: 1px solid #e8e8e8;
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: #0a0a0a;
+    color: white;
+    border-color: #0a0a0a;
+  }
+  .tab-btn:not(.active):hover { border-color: #0a0a0a; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── TOOLTIP ── */
+  .chart-tooltip {
+    font-family: 'DM Sans', sans-serif !important;
+  }
+
+  /* ── HORIZONTAL SCROLL TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  th {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e8e8e8;
+    white-space: nowrap;
+  }
+  td {
+    padding: 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #f5f5f5;
+    vertical-align: middle;
+  }
+  tr:hover td { background: #fafafa; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid #e8e8e8;
+  }
+
+  /* ── ACCENT NUMBER ── */
+  .accent-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: #888;
+    min-width: 28px;
+  }
+
+  /* smooth number counter */
+  .counter { transition: all 0.3s; }
+
+  @media (max-width: 768px) {
+    .hero-yield { font-size: 80px !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────────────────── NAVIGATION ─────────────────── -->
+<nav class="py-4 px-6 md:px-12">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="eyebrow text-black">UK ISA Income Portfolio</div>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#overview" class="eyebrow text-gray-400 hover:text-black transition-colors">Overview</a>
+      <a href="#holdings" class="eyebrow text-gray-400 hover:text-black transition-colors">Holdings</a>
+      <a href="#allocation" class="eyebrow text-gray-400 hover:text-black transition-colors">Allocation</a>
+      <a href="#logic" class="eyebrow text-gray-400 hover:text-black transition-colors">Strategy</a>
+      <a href="#risks" class="eyebrow text-gray-400 hover:text-black transition-colors">Risks</a>
+    </div>
+    <div class="eyebrow text-gray-400">2025 / 26</div>
+  </div>
+</nav>
+
+<!-- ─────────────────── HERO ─────────────────── -->
+<section class="pt-36 pb-28 px-6 md:px-12 border-b border-gray-100">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-end">
+
+      <div class="md:col-span-8">
+        <div class="eyebrow text-gray-400 mb-8 hero-meta">Stocks &amp; Shares ISA · Equal Weight · UK-Listed</div>
+        <h1>
+          <span class="hero-line"><span class="display text-[72px] md:text-[108px] lg:text-[136px]" style="animation-delay:0s">A UK Income</span></span>
+          <span class="hero-line"><span class="display-bold text-[72px] md:text-[108px] lg:text-[136px]" style="animation-delay:0.12s">Portfolio</span></span>
+          <span class="hero-line"><span class="display text-[72px] md:text-[108px] lg:text-[136px]" style="animation-delay:0.24s"><em>built for yield.</em></span></span>
+        </h1>
+        <p class="hero-meta mt-10 text-gray-500 text-base md:text-lg font-light max-w-xl leading-relaxed" style="animation-delay:0.5s">
+          Ten equal-weight positions across investment trusts, ETFs and OEICs — all UK-listed, all ISA-eligible — targeting a blended income yield of approximately 6% per annum.
+        </p>
+      </div>
+
+      <div class="md:col-span-4 hero-meta" style="animation-delay:0.7s">
+        <div class="border border-gray-200 p-8">
+          <div class="eyebrow text-gray-400 mb-4">Target Blended Yield</div>
+          <div class="display-bold text-8xl md:text-9xl leading-none">~6%</div>
+          <div class="mt-6 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="eyebrow text-gray-400">Holdings</span>
+              <span class="font-medium text-sm">10</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+              <span class="eyebrow text-gray-400">Weight per holding</span>
+              <span class="font-medium text-sm">10%</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+              <span class="eyebrow text-gray-400">ISA Allowance 25/26</span>
+              <span class="font-medium text-sm">£20,000</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+              <span class="eyebrow text-gray-400">Per Holding</span>
+              <span class="font-medium text-sm">£2,000</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+              <span class="eyebrow text-gray-400">Currency</span>
+              <span class="font-medium text-sm">Sterling only</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── STAT STRIP ─────────────────── -->
+<section id="overview" class="py-16 px-6 md:px-12 border-b border-gray-100">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-px bg-gray-200">
+      <div class="stat-card bg-white p-8 reveal">
+        <div class="eyebrow text-gray-400 mb-3">Vehicle Types</div>
+        <div class="display-bold text-5xl">3</div>
+        <div class="text-xs text-gray-500 mt-2 font-light">IT · ETF · OEIC</div>
+      </div>
+      <div class="stat-card bg-white p-8 reveal reveal-delay-1">
+        <div class="eyebrow text-gray-400 mb-3">Asset Classes</div>
+        <div class="display-bold text-5xl">5</div>
+        <div class="text-xs text-gray-500 mt-2 font-light">Diversified exposure</div>
+      </div>
+      <div class="stat-card bg-white p-8 reveal reveal-delay-2">
+        <div class="eyebrow text-gray-400 mb-3">Dividend Heroes</div>
+        <div class="display-bold text-5xl">2</div>
+        <div class="text-xs text-gray-500 mt-2 font-light">30–42 yr growth streaks</div>
+      </div>
+      <div class="stat-card bg-white p-8 reveal reveal-delay-3">
+        <div class="eyebrow text-gray-400 mb-3">Monthly Payers</div>
+        <div class="display-bold text-5xl">1</div>
+        <div class="text-xs text-gray-500 mt-2 font-light">SMIF pays monthly</div>
+      </div>
+      <div class="stat-card bg-white p-8 reveal reveal-delay-4">
+        <div class="eyebrow text-gray-400 mb-3">Max Single Yield</div>
+        <div class="display-bold text-5xl">~10%</div>
+        <div class="text-xs text-gray-500 mt-2 font-light">HFEL / UKW</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── HOLDINGS ─────────────────── -->
+<section id="holdings" class="py-24 px-6 md:px-12">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-16 mb-16">
+      <div class="md:col-span-4 reveal">
+        <span class="section-rule"></span>
+        <div class="eyebrow text-gray-400 mb-4">The Portfolio</div>
+        <h2 class="display text-5xl md:text-6xl mb-6">Ten Equal<br><em>Positions</em></h2>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">Each holding represents 10% of the portfolio — £2,000 on a full £20,000 ISA allowance. The mix of vehicle types ensures broad platform availability, liquidity and diversified income mechanics.</p>
+        <div class="mt-8 flex gap-3 flex-wrap">
+          <span class="pill pill-it">Investment Trust</span>
+          <span class="pill pill-etf">ETF</span>
+          <span class="pill pill-oeic">OEIC</span>
+        </div>
+      </div>
+      <div class="md:col-span-8 reveal reveal-delay-1">
+        <div class="mb-4 flex gap-2">
+          <button class="tab-btn active" onclick="switchTab(this,'tab-list')">List View</button>
+          <button class="tab-btn" onclick="switchTab(this,'tab-table')">Table View</button>
+        </div>
+
+        <!-- LIST VIEW -->
+        <div id="tab-list" class="tab-panel active">
+          <div id="holdings-list"></div>
+        </div>
+
+        <!-- TABLE VIEW -->
+        <div id="tab-table" class="tab-panel">
+          <div class="table-wrap border border-gray-200">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Ticker</th>
+                  <th>Type</th>
+                  <th>Asset Class</th>
+                  <th>Yield</th>
+                  <th>Weight</th>
+                </tr>
+              </thead>
+              <tbody id="holdings-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────── ALLOCATION / CHARTS ─────────────────── -->
+<section id="allocation" class="py-24 px-6 md:px-12 bg-gray-50 border-t border-b border-gray-100">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="reveal mb-16">
+      <span class="section-rule"></span>
+      <div class="eyebrow text-gray-400 mb-4">Data Visualisation</div>
+      <h2 class="display text-5xl md:text-6xl">Portfolio at a <em>Glance</em></h2>
+    </div>
+
+    <!-- Chart Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+      <!-- Donut: Asset Allocation -->
+      <div class="bg-white border border-gray-200 p-8 reveal">
+        <div class="eyebrow text-gray-400 mb-1">Asset Allocation</div>
+        <p class="text-xs text-gray-400 font-light mb-6">By % of portfolio</p>
+        <div class="relative" style="height:220px">
+          <canvas id="donutChart"></canvas>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span class="display-bold text-3xl">~6.2%</span>
+            <span class="eyebrow text-gray-400" style="font-size:9px">blended yield</span>
+          </div>
+        </div>
+        <div id="donut-legend" class="mt-6 space-y-2"></div>
+      </div>
+
+      <!-- Bar: Yield by Holding -->
+      <div class="bg-white border border-gray-200 p-8 reveal reveal-delay-1 md:col-span-2">
+        <div class="eyebrow text-gray-400 mb-1">Yield by Holding</div>
+        <p class="text-xs text-gray-400 font-light mb-6">Approximate distribution yield (%)</p>
+        <div style="height:280px">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Yield Spectrum -->
+      <div class="bg-white border border-gray-200 p-8 reveal md:col-span-2">
+        <div class="eyebrow text-gray-400 mb-1">Yield Contribution</div>
+        <p class="text-xs text-gray-400 font-light mb-6">Weighted contribution of each holding to the total portfolio yield</p>
+        <div id="yield-spectrum" class="space-y-4 mt-2"></div>
+      </div>
+
+      <!-- Vehicle Breakdown -->
+      <div class="bg-white border border-gray-200 p-8 reveal reveal-delay-1">
+        <div class="eyebrow text-gray-400 mb-1">Vehicle Mix</div>
+        <p class="text-xs text-gray-400 font-light mb-6">By number of holdings</p>
+        <div style="height:200px">
+          <canvas id="vehicleChart"></canvas>
+        </div>
+        <div id="vehicle-legend" class="mt-6 space-y-2"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── PORTFOLIO LOGIC ─────────────────── -->
+<section id="logic" class="py-24 px-6 md:px-12">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-16">
+
+      <div class="md:col-span-4 reveal">
+        <span class="section-rule"></span>
+        <div class="eyebrow text-gray-400 mb-4">Investment Rationale</div>
+        <h2 class="display text-5xl md:text-6xl mb-6">Portfolio<br><em>Logic</em></h2>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">Reaching 6% on a diversified basis requires deliberate blending. No single sleeve achieves the target — the portfolio is constructed so complementary income sources compound each other toward the goal without excessive concentration risk.</p>
+      </div>
+
+      <div class="md:col-span-8">
+        <div class="grid grid-cols-1 gap-4" id="logic-cards"></div>
+      </div>
+    </div>
+
+    <!-- Why Equal Weighting -->
+    <div class="mt-20 border border-gray-200 p-10 md:p-16 reveal">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="eyebrow text-gray-400 mb-4">Construction Principle</div>
+          <h3 class="display text-4xl md:text-5xl mb-6">Why Equal <em>Weighting?</em></h3>
+          <p class="text-sm text-gray-500 font-light leading-relaxed mb-4">
+            Equal weighting avoids concentration in any single income source. The lower-yielding, higher-quality UK equity and passive positions (3.8–5.1%) are balanced by specialist higher-yielders in credit, infrastructure and Asia (7–9.5%).
+          </p>
+          <p class="text-sm text-gray-500 font-light leading-relaxed">
+            Annual rebalancing to equal weights enforces a buy-low discipline — trimming whatever has outperformed and adding to whatever has lagged — and captures mean-reversion in investment trust discounts.
+          </p>
+        </div>
+        <div>
+          <div class="space-y-4" id="blending-viz"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────── RISKS ─────────────────── -->
+<section id="risks" class="py-24 px-6 md:px-12 bg-gray-50 border-t border-gray-100">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-16">
+
+      <div class="md:col-span-4 reveal">
+        <span class="section-rule"></span>
+        <div class="eyebrow text-gray-400 mb-4">Due Diligence</div>
+        <h2 class="display text-5xl md:text-6xl mb-6">Key<br><em>Risks</em></h2>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">These risks should be carefully weighed before investing. None are reasons to avoid the portfolio outright, but each demands awareness and appropriate position sizing.</p>
+      </div>
+
+      <div class="md:col-span-8 reveal reveal-delay-1">
+        <div id="risk-items"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────── PRACTICAL NOTES ─────────────────── -->
+<section class="py-24 px-6 md:px-12 border-t border-gray-100">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal mb-12">
+      <span class="section-rule"></span>
+      <div class="eyebrow text-gray-400 mb-4">Getting Started</div>
+      <h2 class="display text-5xl md:text-6xl">Practical <em>Notes</em></h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-px bg-gray-200 reveal">
+      <div class="bg-white p-8">
+        <div class="text-2xl mb-4">£</div>
+        <div class="eyebrow text-black mb-3">ISA Allowance</div>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">2025/26 annual allowance is £20,000. Equal weight = £2,000 per holding. Part-year contributions can scale proportionally.</p>
+      </div>
+      <div class="bg-white p-8">
+        <div class="text-2xl mb-4">🏦</div>
+        <div class="eyebrow text-black mb-3">Platform Access</div>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">All ten holdings are available on HL, Interactive Investor, AJ Bell and Fidelity ISA platforms. All trusts and ETFs are LSE-listed.</p>
+      </div>
+      <div class="bg-white p-8">
+        <div class="text-2xl mb-4">📅</div>
+        <div class="eyebrow text-black mb-3">Rebalancing</div>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">Rebalance annually back to equal weights. This enforces discipline and harvests trusts at unusually wide NAV discounts.</p>
+      </div>
+      <div class="bg-white p-8">
+        <div class="text-2xl mb-4">💱</div>
+        <div class="eyebrow text-black mb-3">Currency</div>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">All holdings are sterling-denominated and UK-listed. No foreign exchange risk. The Vanguard OEIC is priced daily at NAV.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── FOOTER ─────────────────── -->
+<footer class="py-12 px-6 md:px-12 bg-white">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row justify-between items-start gap-8">
+      <div>
+        <div class="eyebrow text-black mb-2">UK ISA Income Portfolio</div>
+        <div class="eyebrow text-gray-400">~6% Target Yield · Equal Weight · 2025–26</div>
+      </div>
+      <p class="text-xs text-gray-400 font-light max-w-lg leading-relaxed">
+        This website is for informational purposes only and does not constitute personal financial advice. Yields are approximate and will fluctuate. Past dividends do not guarantee future payouts. All investments can fall in value and you may get back less than you invest. Consider consulting a qualified financial adviser before investing.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ─────────────────── SCRIPTS ─────────────────── -->
+<script>
+
+// ── DATA ──────────────────────────────────────────────────────
+const holdings = [
+  { num:'01', name:'Merchants Trust',                ticker:'MRCH', type:'IT',   typeLabel:'Investment Trust', asset:'UK Equity Income',       yield:5.0,  yieldStr:'~5.0%' },
+  { num:'02', name:'Schroder Income Growth Fund',    ticker:'SCF',  type:'IT',   typeLabel:'Investment Trust', asset:'UK Equity Income',       yield:5.1,  yieldStr:'~5.1%' },
+  { num:'03', name:'Henderson Far East Income',      ticker:'HFEL', type:'IT',   typeLabel:'Investment Trust', asset:'Asia Equity Income',     yield:9.5,  yieldStr:'~9.5%' },
+  { num:'04', name:'Greencoat UK Wind',              ticker:'UKW',  type:'IT',   typeLabel:'Investment Trust', asset:'Renewable Infrastructure',yield:9.5, yieldStr:'~9.5%' },
+  { num:'05', name:'HICL Infrastructure',            ticker:'HICL', type:'IT',   typeLabel:'Investment Trust', asset:'Core Infrastructure',    yield:7.0,  yieldStr:'~7.0%' },
+  { num:'06', name:'M&G Credit Income',              ticker:'MGCI', type:'IT',   typeLabel:'Investment Trust', asset:'Diversified Credit',     yield:8.0,  yieldStr:'~8.0%' },
+  { num:'07', name:'TwentyFour Select Monthly Income',ticker:'SMIF',type:'IT',   typeLabel:'Investment Trust', asset:'Credit / ABS',           yield:8.5,  yieldStr:'~8.5%' },
+  { num:'08', name:'iShares UK Dividend UCITS ETF',  ticker:'IUKD', type:'ETF',  typeLabel:'ETF',              asset:'UK Equity (Passive)',    yield:4.9,  yieldStr:'~4.9%' },
+  { num:'09', name:'SPDR UK Dividend Aristocrats',   ticker:'UKDV', type:'ETF',  typeLabel:'ETF',              asset:'UK Equity (Passive)',    yield:4.5,  yieldStr:'~4.5%' },
+  { num:'10', name:'Vanguard FTSE UK Equity Income', ticker:'—',    type:'OEIC', typeLabel:'OEIC',             asset:'UK Equity Income (Passive)',yield:3.8,yieldStr:'~3.8%' },
+];
+
+const allocations = [
+  { label:'UK Equity Income', pct:40, color:'#0a0a0a' },
+  { label:'Credit / Fixed Income', pct:20, color:'#555' },
+  { label:'Core Infrastructure', pct:10, color:'#888' },
+  { label:'Renewable Infrastructure', pct:10, color:'#aaa' },
+  { label:'Asia Equity Income', pct:10, color:'#ccc' },
+  { label:'Passive OEIC', pct:10, color:'#e8e8e8' },
+];
+
+const logicCards = [
+  {
+    icon:'🏛️',
+    title:'UK Equity Income — The Bedrock',
+    weight:'40%',
+    holdings:'MRCH · SCF · IUKD · UKDV',
+    text:'The portfolio\'s foundation. Merchants Trust has raised its dividend for 42 consecutive years; Schroder Income Growth for 30. Both are AIC Dividend Heroes. IUKD and UKDV add low-cost passive breadth across the widest UK dividend payers, yielding 4.5–5.1%.'
+  },
+  {
+    icon:'📊',
+    title:'Credit — The Yield Engine',
+    weight:'20%',
+    holdings:'MGCI · SMIF',
+    text:'UK equity alone won\'t reach 6%, so credit provides the uplift. M&G Credit Income delivers ~8% from investment-grade-quality public and private debt with low interest rate duration. TwentyFour Select pays monthly at ~8.5% from diversified ABS and bonds — currently at its highest-ever credit quality.'
+  },
+  {
+    icon:'🌬️',
+    title:'Renewable & Core Infrastructure',
+    weight:'20%',
+    holdings:'UKW · HICL',
+    text:'Infrastructure adds inflation-linkage and low equity correlation. Greencoat UK Wind targets dividends rising with RPI (achieved for 12 consecutive years). HICL holds long-duration government-backed assets — hospitals, schools, roads — providing the most predictable cash flows in the portfolio. Wide NAV discounts inflate the headline yield.'
+  },
+  {
+    icon:'🌍',
+    title:'Asia Equity Income — The Diversifier',
+    weight:'10%',
+    holdings:'HFEL',
+    text:'Henderson Far East Income provides the highest equity yield (~9.5%), exploiting Asia\'s deep dividend culture. It adds genuine geographic diversification and exposure to higher-growth markets. Treat as high-income, lower-growth: capital return has been modest and the dividend is partly capital-funded in some years.'
+  },
+];
+
+const risks = [
+  {
+    label:'Interest Rate Risk',
+    severity:'Medium–High',
+    text:'Infrastructure and renewable trusts (UKW, HICL) suffered significant capital losses post-2022 as interest rates rose, compressing NAVs and widening discounts. The wide discounts mean the yield looks high partly because the price has fallen. If rates remain elevated or rise further, NAV pressure may continue.'
+  },
+  {
+    label:'Dividend Sustainability',
+    severity:'Medium',
+    text:'HFEL\'s dividend has been partially capital-funded in some years. High-yielding credit trusts can reduce distributions in a severe credit cycle. Mechanical yield screens in IUKD and UKDV may inadvertently include value traps — companies paying high dividends because their share prices have collapsed.'
+  },
+  {
+    label:'Sector Concentration',
+    severity:'Medium',
+    text:'UK equity income is naturally heavy in financials, energy and consumer staples. The passive ETFs will amplify this concentration. Renewable policy risk and potential subsidy restructuring remain structural concerns for the infrastructure sleeve, particularly in a changing UK regulatory environment.'
+  },
+  {
+    label:'Liquidity Risk',
+    severity:'Low–Medium',
+    text:'TwentyFour Select Monthly Income (SMIF) invests in structured credit (ABS, CLOs, bonds), which can be less liquid in market stress conditions. Investment trusts can trade at wide discounts during periods of risk-off sentiment, meaning you may sell below NAV if you need to exit quickly.'
+  },
+];
+
+// ── BUILD HOLDINGS LIST ───────────────────────────────────────
+const listEl = document.getElementById('holdings-list');
+const tableEl = document.getElementById('holdings-table');
+
+holdings.forEach(h => {
+  const pillClass = h.type === 'IT' ? 'pill-it' : h.type === 'ETF' ? 'pill-etf' : 'pill-oeic';
+  const barW = Math.round((h.yield / 10) * 100);
+
+  // List row
+  const row = document.createElement('div');
+  row.className = 'holding-row py-5 flex items-center gap-4';
+  row.innerHTML = `
+    <span class="accent-num">${h.num}</span>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-3 mb-1 flex-wrap">
+        <span class="font-medium text-sm text-black truncate">${h.name}</span>
+        <span class="pill ${pillClass}">${h.typeLabel}</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="eyebrow text-gray-400" style="font-size:9px">${h.ticker}</span>
+        <span class="text-xs text-gray-400 font-light">${h.asset}</span>
+      </div>
+      <div class="mt-2 flex items-center gap-3">
+        <div class="flex-1 bg-gray-100 rounded h-0.5 max-w-32">
+          <div class="yield-bar-fill" style="width:0%" data-w="${barW}%"></div>
+        </div>
+        <span class="font-mono text-xs text-gray-500">${h.yieldStr}</span>
+      </div>
+    </div>
+    <div class="text-right hidden sm:block">
+      <div class="display-bold text-3xl">${h.yieldStr}</div>
+      <div class="eyebrow text-gray-400 mt-1">10% wt</div>
+    </div>
+  `;
+  listEl.appendChild(row);
+
+  // Table row
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="font-mono text-xs text-gray-400">${h.num}</td>
+    <td class="font-medium text-sm">${h.name}</td>
+    <td><span class="pill pill-${h.type.toLowerCase()}" style="font-size:9px">${h.ticker}</span></td>
+    <td><span class="pill ${pillClass}">${h.typeLabel}</span></td>
+    <td class="text-gray-500 text-xs">${h.asset}</td>
+    <td class="font-medium text-sm">${h.yieldStr}</td>
+    <td class="font-mono text-xs text-gray-400">10%</td>
+  `;
+  tableEl.appendChild(tr);
+});
+
+// ── YIELD SPECTRUM ────────────────────────────────────────────
+const spectrumEl = document.getElementById('yield-spectrum');
+const weightedYield = (y) => (y * 0.1).toFixed(2);
+holdings.forEach(h => {
+  const contrib = (h.yield * 0.1).toFixed(2);
+  const w = (h.yield / 10 * 100).toFixed(0);
+  spectrumEl.innerHTML += `
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs font-medium">${h.ticker === '—' ? 'Vanguard OEIC' : h.ticker}</span>
+        <span class="font-mono text-xs text-gray-500">${contrib}% contribution</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex-1 bg-gray-100 rounded-sm h-1.5">
+          <div class="h-full bg-black rounded-sm spectrum-bar" style="width:0" data-w="${w}%"></div>
+        </div>
+        <span class="font-mono text-xs text-gray-400 w-12 text-right">${h.yieldStr}</span>
+      </div>
+    </div>
+  `;
+});
+
+// ── BLENDING VIZ ─────────────────────────────────────────────
+const blendEl = document.getElementById('blending-viz');
+const groups = [
+  { label:'UK Equity Income', yields:[5.0,5.1,4.9,4.5,3.8], avg:4.66 },
+  { label:'Credit', yields:[8.0,8.5], avg:8.25 },
+  { label:'Infrastructure', yields:[9.5,7.0], avg:8.25 },
+  { label:'Asia', yields:[9.5], avg:9.5 },
+];
+groups.forEach(g => {
+  blendEl.innerHTML += `
+    <div class="flex items-center gap-4">
+      <div class="w-36 text-xs font-medium">${g.label}</div>
+      <div class="flex-1 bg-gray-100 rounded h-6 relative">
+        <div class="h-full bg-black rounded blend-bar" style="width:0" data-w="${(g.avg/10*100).toFixed(0)}%"></div>
+      </div>
+      <div class="font-mono text-xs text-gray-500 w-12 text-right">~${g.avg.toFixed(1)}%</div>
+    </div>
+  `;
+});
+
+// ── LOGIC CARDS ───────────────────────────────────────────────
+const logicEl = document.getElementById('logic-cards');
+logicCards.forEach((c,i) => {
+  const el = document.createElement('div');
+  el.className = `logic-card p-8 reveal reveal-delay-${i%4}`;
+  el.innerHTML = `
+    <div class="flex items-start gap-6">
+      <div class="text-3xl flex-shrink-0">${c.icon}</div>
+      <div class="flex-1">
+        <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+          <h3 class="font-medium text-base">${c.title}</h3>
+          <div class="text-right flex-shrink-0">
+            <div class="display-bold text-2xl">${c.weight}</div>
+            <div class="eyebrow text-gray-400" style="font-size:9px">${c.holdings}</div>
+          </div>
+        </div>
+        <p class="text-sm text-gray-500 font-light leading-relaxed">${c.text}</p>
+      </div>
+    </div>
+  `;
+  logicEl.appendChild(el);
+});
+
+// ── RISK ITEMS ────────────────────────────────────────────────
+const riskEl = document.getElementById('risk-items');
+risks.forEach(r => {
+  const el = document.createElement('div');
+  el.className = 'risk-item';
+  el.innerHTML = `
+    <div class="flex items-start justify-between gap-4 mb-3">
+      <h3 class="font-medium text-sm">${r.label}</h3>
+      <span class="eyebrow text-gray-400 flex-shrink-0" style="font-size:9px">Severity: ${r.severity}</span>
+    </div>
+    <p class="text-sm text-gray-500 font-light leading-relaxed">${r.text}</p>
+  `;
+  riskEl.appendChild(el);
+});
+
+// ── CHARTS ───────────────────────────────────────────────────
+
+// Donut chart
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+new Chart(donutCtx, {
+  type: 'doughnut',
+  data: {
+    labels: allocations.map(a => a.label),
+    datasets: [{
+      data: allocations.map(a => a.pct),
+      backgroundColor: allocations.map(a => a.color),
+      borderColor: '#fff',
+      borderWidth: 3,
+      hoverBorderWidth: 3,
+    }]
+  },
+  options: {
+    cutout: '68%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%`
+        },
+        bodyFont: { family: 'DM Sans', size: 12 },
+        titleFont: { family: 'DM Sans', size: 12 },
+        padding: 10,
+        cornerRadius: 4,
+      }
+    },
+    animation: { animateRotate: true, duration: 1200, easing: 'easeInOutQuart' },
+  }
+});
+
+// Donut legend
+const donutLegendEl = document.getElementById('donut-legend');
+allocations.forEach(a => {
+  donutLegendEl.innerHTML += `
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background:${a.color}"></div>
+        <span class="text-xs text-gray-600 font-light">${a.label}</span>
+      </div>
+      <span class="font-mono text-xs text-gray-400">${a.pct}%</span>
+    </div>
+  `;
+});
+
+// Bar chart
+const barCtx = document.getElementById('barChart').getContext('2d');
+new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels: holdings.map(h => h.ticker === '—' ? 'VFUIK' : h.ticker),
+    datasets: [{
+      label: 'Yield (%)',
+      data: holdings.map(h => h.yield),
+      backgroundColor: holdings.map(h =>
+        h.type === 'IT' ? '#0a0a0a' : h.type === 'ETF' ? '#777' : '#ccc'
+      ),
+      borderRadius: 2,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.parsed.y}% yield`
+        },
+        bodyFont: { family: 'DM Sans', size: 12 },
+        titleFont: { family: 'DM Sans', size: 11 },
+        padding: 10,
+        cornerRadius: 4,
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'DM Mono', size: 10 }, color: '#888' },
+        border: { display: false }
+      },
+      y: {
+        grid: { color: '#f0f0f0' },
+        ticks: {
+          font: { family: 'DM Mono', size: 10 }, color: '#888',
+          callback: v => v + '%'
+        },
+        border: { display: false },
+        min: 0, max: 11,
+      }
+    },
+    animation: { duration: 1200, easing: 'easeInOutQuart' },
+  }
+});
+
+// Vehicle donut
+const vehicleCtx = document.getElementById('vehicleChart').getContext('2d');
+new Chart(vehicleCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Investment Trust (7)', 'ETF (2)', 'OEIC (1)'],
+    datasets: [{
+      data: [7, 2, 1],
+      backgroundColor: ['#0a0a0a', '#777', '#e0e0e0'],
+      borderColor: '#fff',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    cutout: '55%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: (ctx) => ` ${ctx.label}` },
+        bodyFont: { family: 'DM Sans', size: 12 },
+        padding: 10,
+        cornerRadius: 4,
+      }
+    },
+    animation: { animateRotate: true, duration: 1000 },
+  }
+});
+
+// Vehicle legend
+const vehicleLegendEl = document.getElementById('vehicle-legend');
+[['Investment Trust','#0a0a0a','7 holdings'],['ETF','#777','2 holdings'],['OEIC','#e0e0e0','1 holding']].forEach(([l,c,s]) => {
+  vehicleLegendEl.innerHTML += `
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background:${c};${c==='#e0e0e0'?'border:1px solid #ccc':''}"></div>
+        <span class="text-xs text-gray-600 font-light">${l}</span>
+      </div>
+      <span class="font-mono text-xs text-gray-400">${s}</span>
+    </div>
+  `;
+});
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(btn, panelId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      // Also animate bars inside
+      e.target.querySelectorAll('.yield-bar-fill, .spectrum-bar, .blend-bar').forEach(bar => {
+        bar.style.width = bar.dataset.w || '0%';
+      });
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+revealEls.forEach(el => observer.observe(el));
+
+// Animate bars that are visible on load
+setTimeout(() => {
+  document.querySelectorAll('.yield-bar-fill, .spectrum-bar, .blend-bar').forEach(bar => {
+    const parent = bar.closest('.visible');
+    if (parent) bar.style.width = bar.dataset.w || '0%';
+  });
+}, 200);
+
+</script>
+</body>
+</html>
